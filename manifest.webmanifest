@@ -1,0 +1,14 @@
+{
+  "id": "./",
+  "name": "こすってアート",
+  "short_name": "こすってアート",
+  "description": "何度もこすって色を見つける、デジタルスクラッチアート。",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#10121a",
+  "background_color": "#11131b",
+  "icons": [{"src":"assets/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}
