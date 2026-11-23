@@ -1,4 +1,5 @@
 const ART = [
+  { id: 'fire-dragon', title: 'ほのおのドラゴン', subtitle: '火山にひびくドラゴンのほのお', category: 'FIRE DRAGON', color: 'assets/fire-dragon.jpg' },
   { id: 'moon-garden', title: 'おつきさまの庭', subtitle: 'ねこと星あかりの夜', category: 'NIGHT GARDEN', color: 'assets/moon-garden-color.svg', line: 'assets/moon-garden-line.svg' },
   { id: 'cloud-cafe', title: 'くもの上のカフェ', subtitle: '丘の上のちいさなお店', category: 'CLOUD CAFE', color: 'assets/cloud-cafe-color.svg', line: 'assets/cloud-cafe-line.svg' },
   { id: 'reef-friends', title: 'さんごの海のおともだち', subtitle: '魚たちのかくれんぼ', category: 'REEF FRIENDS', color: 'assets/reef-friends-color.svg', line: 'assets/reef-friends-line.svg' },
@@ -22,6 +23,7 @@ for (const source of SOURCE_ART) {
 }
 
 const BASE_WIDTH = 900, MASK_SCALE = 0.5, STORE_KEY = 'scratch-art:v1:';
+const BRUSH_RADIUS = 10;
 let W = BASE_WIDTH, H = 650, MW = 450, MH = 325;
 const grid = document.querySelector('#art-grid');
 const gallery = document.querySelector('#gallery'), studio = document.querySelector('#studio');
@@ -31,18 +33,13 @@ const colorCtx = colorCanvas.getContext('2d'), scratchCtx = scratchCanvas.getCon
 const offscreen = document.createElement('canvas');
 let offCtx, mask = new Uint8Array(MW * MH), scratchBase = null;
 let activeArt = null, drawing = false, previous = null, saveTimer = 0, dirty = false;
-let brushRadius = 6, dust = [], dustFrame = 0, lastDust = 0;
+let dust = [], dustFrame = 0, lastDust = 0;
 
 for (const art of ART) {
   const button = document.createElement('button'); button.className = 'art-card'; button.type = 'button';
   button.innerHTML = `<span class="card-image"><img src="${art.color}" alt="" loading="lazy"><span class="card-chip">${art.category}</span></span><span class="card-info"><span><h3>${art.title}</h3><p>${art.subtitle}</p></span><span class="card-arrow" aria-hidden="true">↗</span></span>`;
   button.addEventListener('click', () => openArt(art)); grid.append(button);
 }
-
-document.querySelectorAll('[data-brush]').forEach(button => button.addEventListener('click', () => {
-  brushRadius = Number(button.dataset.brush);
-  document.querySelectorAll('[data-brush]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
-}));
 
 function loadImage(src) {
   return new Promise((resolve, reject) => { const image = new Image(); image.onload = () => resolve(image); image.onerror = reject; image.src = src; });
@@ -148,7 +145,7 @@ function saveNow() {
 }
 function queueSave() { dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 500); }
 function dab(x, y, pressure = .5) {
-  const cx = x * MW / W, cy = y * MH / H, radius = brushRadius * (.82 + Math.min(.6, pressure) * .3);
+  const cx = x * MW / W, cy = y * MH / H, radius = BRUSH_RADIUS * (.82 + Math.min(.6, pressure) * .3);
   const reach = Math.ceil(radius + 2), left = Math.max(0, Math.floor(cx - reach)), right = Math.min(MW - 1, Math.ceil(cx + reach));
   const top = Math.max(0, Math.floor(cy - reach)), bottom = Math.min(MH - 1, Math.ceil(cy + reach));
   for (let py = top; py <= bottom; py++) for (let px = left; px <= right; px++) {
