@@ -1,7 +1,8 @@
 const CACHE_PREFIX = 'kosutte-art-v';
-const CACHE = `${CACHE_PREFIX}7`;
+const CACHE = `${CACHE_PREFIX}8`;
 const FILES = [
   './', './index.html', './styles.css', './app.js', './manifest.webmanifest', './assets/icon.svg',
+  './assets/peter-pan-moon.jpg',
   './assets/pinocchio-workshop.jpg',
   './assets/fire-dragon.jpg',
   './assets/penguin-preschool.jpg',

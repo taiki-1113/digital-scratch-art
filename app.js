@@ -1,4 +1,5 @@
 const ART = [
+  { id: 'peter-pan-moon', title: 'ピーター・パンと月のそら', subtitle: '月をこえて、かいぞくせんを見にいこう', category: 'PETER PAN', color: 'assets/peter-pan-moon.jpg' },
   { id: 'pinocchio-workshop', title: 'ピノキオとひかるおもちゃ', subtitle: 'きのにんぎょうと にじいろのこうぼう', category: 'PINOCCHIO', color: 'assets/pinocchio-workshop.jpg' },
   { id: 'sports-day-drum', title: 'うんどうかいのたいこ', subtitle: 'にじのひかりに ひびくたいこ', category: 'SPORTS DAY', color: 'assets/sports-day-drum.jpg' },
   { id: 'panda-kuroshio', title: 'ぱんだくろしお', subtitle: 'うみべをはしる パンダのでんしゃ', category: 'PANDA EXPRESS', color: 'assets/panda-kuroshio.jpg' },
