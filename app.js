@@ -1,12 +1,9 @@
 const ART = [
+  { id: 'pinocchio-workshop', title: 'ピノキオとひかるおもちゃ', subtitle: 'きのにんぎょうと にじいろのこうぼう', category: 'PINOCCHIO', color: 'assets/pinocchio-workshop.jpg' },
   { id: 'sports-day-drum', title: 'うんどうかいのたいこ', subtitle: 'にじのひかりに ひびくたいこ', category: 'SPORTS DAY', color: 'assets/sports-day-drum.jpg' },
   { id: 'panda-kuroshio', title: 'ぱんだくろしお', subtitle: 'うみべをはしる パンダのでんしゃ', category: 'PANDA EXPRESS', color: 'assets/panda-kuroshio.jpg' },
-  { id: 'family-portrait', title: 'かぞくのきねんび', subtitle: 'にじのはなばたけで みんなえがお', category: 'FAMILY PORTRAIT', color: 'assets/family-portrait.jpg' },
   { id: 'penguin-preschool', title: 'ペンギンのほいくえん', subtitle: 'あおいぼうしと ちょうちょのせんせい', category: 'PENGUIN PRESCHOOL', color: 'assets/penguin-preschool.jpg' },
   { id: 'fire-dragon', title: 'ほのおのドラゴン', subtitle: '火山にひびくドラゴンのほのお', category: 'FIRE DRAGON', color: 'assets/fire-dragon.jpg' },
-  { id: 'moon-garden', title: 'おつきさまの庭', subtitle: 'ねこと星あかりの夜', category: 'NIGHT GARDEN', color: 'assets/moon-garden-color.svg', line: 'assets/moon-garden-line.svg' },
-  { id: 'cloud-cafe', title: 'くもの上のカフェ', subtitle: '丘の上のちいさなお店', category: 'CLOUD CAFE', color: 'assets/cloud-cafe-color.svg', line: 'assets/cloud-cafe-line.svg' },
-  { id: 'reef-friends', title: 'さんごの海のおともだち', subtitle: '魚たちのかくれんぼ', category: 'REEF FRIENDS', color: 'assets/reef-friends-color.svg', line: 'assets/reef-friends-line.svg' },
 ];
 
 const SOURCE_ART = [
