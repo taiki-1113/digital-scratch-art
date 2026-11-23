@@ -1,4 +1,5 @@
 const ART = [
+  { id: 'penguin-preschool', title: 'ペンギンのほいくえん', subtitle: 'あおいぼうしと ちょうちょのせんせい', category: 'PENGUIN PRESCHOOL', color: 'assets/penguin-preschool.jpg' },
   { id: 'fire-dragon', title: 'ほのおのドラゴン', subtitle: '火山にひびくドラゴンのほのお', category: 'FIRE DRAGON', color: 'assets/fire-dragon.jpg' },
   { id: 'moon-garden', title: 'おつきさまの庭', subtitle: 'ねこと星あかりの夜', category: 'NIGHT GARDEN', color: 'assets/moon-garden-color.svg', line: 'assets/moon-garden-line.svg' },
   { id: 'cloud-cafe', title: 'くもの上のカフェ', subtitle: '丘の上のちいさなお店', category: 'CLOUD CAFE', color: 'assets/cloud-cafe-color.svg', line: 'assets/cloud-cafe-line.svg' },
@@ -24,21 +25,29 @@ for (const source of SOURCE_ART) {
 
 const BASE_WIDTH = 900, MASK_SCALE = 0.5, STORE_KEY = 'scratch-art:v1:';
 const BRUSH_RADIUS = 10;
+const ZOOM_LEVELS = [1, 1.25, 1.5, 2, 2.5, 3];
 let W = BASE_WIDTH, H = 650, MW = 450, MH = 325;
 const grid = document.querySelector('#art-grid');
 const gallery = document.querySelector('#gallery'), studio = document.querySelector('#studio');
 const artboard = document.querySelector('#artboard'), canvasWrap = document.querySelector('#canvas-wrap');
+const backButton = document.querySelector('#back-button');
+const zoomOutButton = document.querySelector('#zoom-out');
+const zoomInButton = document.querySelector('#zoom-in');
+const zoomFitButton = document.querySelector('#zoom-fit');
+const panButtons = document.querySelectorAll('[data-pan]');
 const colorCanvas = document.querySelector('#color-layer'), scratchCanvas = document.querySelector('#scratch-layer'), lineCanvas = document.querySelector('#line-layer'), debrisCanvas = document.querySelector('#debris-layer');
 const colorCtx = colorCanvas.getContext('2d'), scratchCtx = scratchCanvas.getContext('2d'), lineCtx = lineCanvas.getContext('2d'), debrisCtx = debrisCanvas.getContext('2d');
 const offscreen = document.createElement('canvas');
 let offCtx, mask = new Uint8Array(MW * MH), scratchBase = null;
-let activeArt = null, drawing = false, previous = null, saveTimer = 0, dirty = false;
+let activeArt = null, strokePointer = null, previous = null, saveTimer = 0, dirty = false;
+let returnCard = null;
+let zoomIndex = 0, centerX = .5, centerY = .5;
 let dust = [], dustFrame = 0, lastDust = 0;
 
 for (const art of ART) {
   const button = document.createElement('button'); button.className = 'art-card'; button.type = 'button';
   button.innerHTML = `<span class="card-image"><img src="${art.color}" alt="" loading="lazy"><span class="card-chip">${art.category}</span></span><span class="card-info"><span><h3>${art.title}</h3><p>${art.subtitle}</p></span><span class="card-arrow" aria-hidden="true">↗</span></span>`;
-  button.addEventListener('click', () => openArt(art)); grid.append(button);
+  button.addEventListener('click', () => openArt(art, button)); grid.append(button);
 }
 
 function loadImage(src) {
@@ -53,17 +62,56 @@ function resizeCanvases(height) {
   for (const canvas of [colorCanvas, scratchCanvas, lineCanvas, debrisCanvas]) { canvas.width = W; canvas.height = H; }
   offscreen.width = MW; offscreen.height = MH; offCtx = offscreen.getContext('2d', { alpha: true });
   dust = []; debrisCtx.clearRect(0, 0, W, H);
-  fitBoard();
 }
-function fitBoard() {
+
+function renderView(panX = 0, panY = 0) {
   if (studio.hidden) return;
   const box = canvasWrap.getBoundingClientRect();
   if (!box.width || !box.height) return;
-  const scale = Math.min(box.width / W, box.height / H);
-  artboard.style.width = `${Math.floor(W * scale)}px`;
-  artboard.style.height = `${Math.floor(H * scale)}px`;
-  artboard.style.aspectRatio = `${W} / ${H}`;
+  const scale = Math.min(box.width / W, box.height / H) * ZOOM_LEVELS[zoomIndex];
+  const width = W * scale, height = H * scale;
+  const marginX = Math.min(.5, box.width / (2 * width));
+  const marginY = Math.min(.5, box.height / (2 * height));
+  centerX = Math.max(marginX, Math.min(1 - marginX, centerX + panX * box.width / width));
+  centerY = Math.max(marginY, Math.min(1 - marginY, centerY + panY * box.height / height));
+
+  const left = box.width / 2 - centerX * width;
+  const top = box.height / 2 - centerY * height;
+  artboard.style.width = `${width}px`;
+  artboard.style.height = `${height}px`;
+  artboard.style.left = `${left}px`;
+  artboard.style.top = `${top}px`;
+
+  const canPan = {
+    left: left < -.5,
+    up: top < -.5,
+    down: top + height > box.height + .5,
+    right: left + width > box.width + .5,
+  };
+  for (const button of panButtons) button.disabled = !canPan[button.dataset.pan];
+  zoomOutButton.disabled = zoomFitButton.disabled = zoomIndex === 0;
+  zoomInButton.disabled = zoomIndex === ZOOM_LEVELS.length - 1;
 }
+
+function resetView() {
+  finishStroke();
+  zoomIndex = 0;
+  centerX = centerY = .5;
+  renderView();
+}
+
+const panOffsets = { left: [-.25, 0], up: [0, -.25], down: [0, .25], right: [.25, 0] };
+for (const button of panButtons) {
+  button.addEventListener('click', () => {
+    finishStroke();
+    renderView(...panOffsets[button.dataset.pan]);
+  });
+}
+zoomOutButton.addEventListener('click', () => { finishStroke(); zoomIndex--; renderView(); });
+zoomInButton.addEventListener('click', () => { finishStroke(); zoomIndex++; renderView(); });
+zoomFitButton.addEventListener('click', resetView);
+new ResizeObserver(() => renderView()).observe(canvasWrap);
+
 function makeScratchTexture(seed) {
   const rng = seededRandom(seed), image = offCtx.createImageData(MW, MH);
   for (let i = 0; i < image.data.length; i += 4) {
@@ -114,7 +162,7 @@ async function makeGuide(image, art) {
   }
   guideCtx.putImageData(out, 0, 0); art.generatedGuide = guide; return guide;
 }
-async function openArt(art) {
+async function openArt(art, card) {
   activeArt = art; document.querySelector('#work-name').textContent = art.title;
   document.querySelector('#save-state').textContent = '線画を準備しています…';
   try {
@@ -126,7 +174,12 @@ async function openArt(art) {
     const line = art.line ? await loadImage(art.line) : await makeGuide(color, art);
     lineCtx.clearRect(0, 0, W, H); lineCtx.drawImage(line, 0, 0, W, H);
     mask = savedMask(art.id); makeScratchTexture(art.id.split('').reduce((n, c) => n + c.charCodeAt(0), 77)); paintScratch();
-    gallery.hidden = true; studio.hidden = false; requestAnimationFrame(fitBoard);
+    gallery.hidden = true;
+    studio.hidden = false;
+    document.body.classList.add('is-scratching');
+    returnCard = card;
+    resetView();
+    backButton.focus({ preventScroll: true });
     document.querySelector('#save-state').textContent = 'この端末に保存されます';
   } catch (error) {
     console.error('作品を開けませんでした', error); activeArt = null;
@@ -183,14 +236,39 @@ function drawSegment(a, b) {
   const now = performance.now(); if (now - lastDust > 35) { emitDust(b, 3); lastDust = now; }
 }
 scratchCanvas.addEventListener('pointerdown', event => {
-  event.preventDefault(); drawing = true; scratchCanvas.setPointerCapture(event.pointerId); previous = pointFromEvent(event); drawSegment(previous, previous); emitDust(previous, 5);
+  if (!event.isPrimary || event.button !== 0 || strokePointer !== null) return;
+  event.preventDefault(); strokePointer = event.pointerId; scratchCanvas.setPointerCapture(event.pointerId); previous = pointFromEvent(event); drawSegment(previous, previous); emitDust(previous, 5);
 });
 scratchCanvas.addEventListener('pointermove', event => {
-  if (!drawing) return; event.preventDefault(); const next = pointFromEvent(event); drawSegment(previous, next); previous = next;
+  if (event.pointerId !== strokePointer) return;
+  event.preventDefault();
+  const viewport = canvasWrap.getBoundingClientRect();
+  if (event.clientX < viewport.left || event.clientX > viewport.right || event.clientY < viewport.top || event.clientY > viewport.bottom) {
+    previous = null;
+    return;
+  }
+  const next = pointFromEvent(event);
+  drawSegment(previous || next, next);
+  previous = next;
 });
-function finishStroke() { drawing = false; previous = null; if (dirty) saveNow(); }
+function finishStroke(event) {
+  if (strokePointer === null || (event && event.pointerId !== strokePointer)) return;
+  const pointerId = strokePointer;
+  strokePointer = null;
+  previous = null;
+  if (scratchCanvas.hasPointerCapture(pointerId)) scratchCanvas.releasePointerCapture(pointerId);
+  if (dirty) saveNow();
+}
 scratchCanvas.addEventListener('pointerup', finishStroke); scratchCanvas.addEventListener('pointercancel', finishStroke); scratchCanvas.addEventListener('lostpointercapture', finishStroke);
-document.querySelector('#back-button').addEventListener('click', () => { if (dirty) saveNow(); studio.hidden = true; gallery.hidden = false; activeArt = null; });
+backButton.addEventListener('click', () => {
+  finishStroke();
+  if (dirty) saveNow();
+  studio.hidden = true;
+  gallery.hidden = false;
+  document.body.classList.remove('is-scratching');
+  activeArt = null;
+  returnCard?.focus();
+});
 document.querySelector('#reset-button').addEventListener('click', () => { if (!activeArt) return; mask = new Uint8Array(MW * MH); paintScratch(); dirty = true; saveNow(); });
-window.addEventListener('pagehide', saveNow); window.addEventListener('resize', fitBoard);
+window.addEventListener('pagehide', saveNow);
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(error => console.warn('オフライン準備に失敗しました', error));
